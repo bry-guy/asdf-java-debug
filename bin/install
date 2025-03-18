@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
+
+# shellcheck source=../lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+# Check for Java
+java_ensure
+
+# Unarchive
+archive="${ASDF_DOWNLOAD_PATH}/java-debug-${ASDF_INSTALL_VERSION}.tar.gz"
+tar -xzf "$archive" -C "$ASDF_DOWNLOAD_PATH" || fail "Could not extract $archive"
+source="$ASDF_DOWNLOAD_PATH/java-debug-${ASDF_INSTALL_VERSION}"
+
+# Modify JDTLS version if set
+if [ -n ${JDTLS_VERSION:-} ]; then
+        echo "Configuring java-debug to use JDTLS version ${JDTLS_VERSION}..."
+    
+    # Path to the target file
+    target_file="${source}/com.microsoft.java.debug.target/com.microsoft.java.debug.tp.target"
+    
+    if [ -f "$target_file" ]; then
+        # Create a backup of the original file
+        cp "$target_file" "${target_file}.bak"
+        
+        # Replace the repository URL using sed
+        sed -i.tmp -e 's|<repository location="https://download.eclipse.org/jdtls/snapshots/repository/latest/"/>|<repository location="https://download.eclipse.org/jdtls/milestones/'"${JDTLS_VERSION}"'/repository"/>|g' "$target_file"
+        
+        # Check if the replacement was successful
+        if grep -q "milestones/${JDTLS_VERSION}/repository" "$target_file"; then
+            echo "Successfully modified target file to use JDTLS version ${JDTLS_VERSION}"
+        else
+            echo "Warning: Failed to modify target file. Using default JDTLS version."
+            # Restore the backup if modification failed
+            cp "${target_file}.bak" "$target_file"
+        fi
+        
+        # Clean up temporary files
+        rm -f "${target_file}.tmp" "${target_file}.bak"
+    else
+        echo "* Warning: Target file not found at ${target_file}"
+    fi
+fi
+
+# Build the project
+maven_build $source
+
+# Copy the built artifacts to the install path
+echo "Copying built artifacts to $ASDF_INSTALL_PATH..."
+mkdir -p "$ASDF_INSTALL_PATH"
+cp -r "$source/com.microsoft.java.debug.plugin/target/com.microsoft.java.debug.plugin-${ASDF_INSTALL_VERSION}.jar" "$ASDF_INSTALL_PATH/"
+
+# Cleanup download directory
+rm -rf "$ASDF_DOWNLOAD_PATH"
+
+echo "java-debug $ASDF_INSTALL_VERSION installation complete!"

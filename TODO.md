@@ -1,0 +1,1 @@
+- [ ] Automatically detect current JDTLS version and build with that version

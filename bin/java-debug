@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+JAVA_DEBUG_HOME="$ASDF_INSTALL_PATH"
+
+# Function to find the latest plugin jar
+find_plugin_jar() {
+  find "$JAVA_DEBUG_HOME/com.microsoft.java.debug.plugin/target" -name "com.microsoft.java.debug.plugin-*.jar" | grep -v "sources" | sort -V | tail -1
+}
+
+# Determine the Java executable
+if [ -n "${JAVA_HOME:-}" ]; then
+  JAVA="$JAVA_HOME/bin/java"
+else
+  JAVA="$(command -v java)"
+fi
+
+if [ -z "$JAVA" ]; then
+  echo "Error: Java is required but not found in PATH or JAVA_HOME"
+  exit 1
+fi
+
+# Default action is to print the path to the plugin jar
+if [ $# -eq 0 ] || [ "$1" = "--path" ]; then
+  echo "$(find_plugin_jar)"
+  exit 0
+fi
+
+# For --help, provide usage information
+if [ "$1" = "--help" ]; then
+  echo "Usage: java-debug [OPTION]"
+  echo ""
+  echo "Options:"
+  echo "  --path    Print the path to the plugin jar (default)"
+  echo "  --help    Display this help message"
+  echo "  --version Print the version of java-debug"
+  echo "  --info    Print information about the java-debug installation"
+  exit 0
+fi
+
+# For --version, print the version
+if [ "$1" = "--version" ]; then
+  echo "java-debug version $ASDF_INSTALL_VERSION"
+  exit 0
+fi
+
+# For --info, provide detailed information
+if [ "$1" = "--info" ]; then
+  PLUGIN_JAR="$(find_plugin_jar)"
+  echo "java-debug information:"
+  echo "  Version: $ASDF_INSTALL_VERSION"
+  echo "  Installation path: $JAVA_DEBUG_HOME"
+  echo "  Plugin JAR: $PLUGIN_JAR"
+  echo ""
+  echo "Usage with JDT.LS:"
+  echo "Add the following to your JDT.LS initialization options:"
+  echo '{
+  "initializationOptions": {
+    "bundles": [
+      "'$PLUGIN_JAR'"
+    ]
+  }
+}'
+  exit 0
+fi
+
+# Any other arguments are treated as arguments to the jar
+echo "Unknown option: $1"
+echo "Use --help to see available options"
+exit 1
+
