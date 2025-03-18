@@ -103,19 +103,14 @@ maven_build() {
 # ---- Java functions ----
 
 java_ensure() {
-  if [ -n "${JAVA_HOME:-}" ]; then
-    if [ ! -x "$JAVA_HOME/bin/java" ]; then
-      fail "JAVA_HOME is set but $JAVA_HOME/bin/java is not executable"
+    if command -v java >/dev/null; then
+        echo "Found java in path."
+    elif [ -n "${JAVA_HOME:-}" ]; then
+        echo "Looking for java in JAVA_HOME."
+        if [ ! -x "$JAVA_HOME/bin/java" ]; then
+            fail "$JAVA_HOME/bin/java is not executable"
+        fi
+    else
+        fail "java not found in path and $JAVA_HOME is unset."
     fi
-  elif ! command -v java >/dev/null; then
-    fail "Java is required but not found. Set JAVA_HOME or ensure java is in PATH."
-  fi
-}
-
-java_get_exe() {
-  if [ -n "${JAVA_HOME:-}" ]; then
-    echo "$JAVA_HOME/bin/java"
-  else
-    command -v java
-  fi
 }
