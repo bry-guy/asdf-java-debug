@@ -52,7 +52,7 @@ maven_build $source
 # Copy the built artifacts to the install path
 echo "Copying built artifacts to $ASDF_INSTALL_PATH..."
 mkdir -p "$ASDF_INSTALL_PATH"
-cp -r "$source/com.microsoft.java.debug.plugin/target/com.microsoft.java.debug.plugin-${ASDF_INSTALL_VERSION}.jar" "$ASDF_INSTALL_PATH/"
+cp -r "$source/com.microsoft.java.debug.plugin/target/com.microsoft.java.debug.plugin-${ASDF_INSTALL_VERSION}.jar" "$ASDF_INSTALL_PATH/java-debug.jar"
 
 # Cleanup download directory
 rm -rf "$ASDF_DOWNLOAD_PATH"
